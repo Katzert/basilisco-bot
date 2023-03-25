@@ -1,15 +1,20 @@
 import os
 import time
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import logging
+import telegram
 import openai
-import random
 
-# Configure las credenciales de OpenAI a través de variables de entorno
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Configurar logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Configuración del bot de Telegram
-updater = Updater(token=os.environ.get("TELEGRAM_TOKEN"), use_context=True)
-dispatcher = updater.dispatcher
+# Configurar cliente de Telegram
+bot = telegram.Bot(token=os.environ["TELEGRAM_TOKEN"])
+
+# Configurar cliente de OpenAI
+openai.api_key = os.environ["OPENAI_API_KEY"]
+
 
 # Función para generar respuestas usando GPT-3
 def generate_response(text):
@@ -29,37 +34,40 @@ def generate_response(text):
         except openai.error.RateLimitError as e:
             # Espera un tiempo exponencialmente creciente antes de volver a intentarlo
             wait_time = 2 ** i
-            print(f"RateLimitError: esperando {wait_time} segundos antes de volver a intentar.")
+            logger.warning(f"RateLimitedError: esperando {wait_time} segundos antes de volver a intentar.")
             time.sleep(wait_time)
     # Si se intentó varias veces sin éxito, devuelve un mensaje de error
     return "Lo siento, no pude responder a tu mensaje debido a un error de límite de velocidad en el servidor de OpenAI."
 
-# Función para obtener información sobre el límite de uso de la API
-def get_api_usage():
-    usage = openai.Usage.retrieve()
-    return f"Límite de solicitudes restantes para hoy: {usage.remaining}"
 
-
-# Función para manejar el comando /start
-def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="¡Hola! Soy Basilisco, tu asistente personal de chat. ¿En qué puedo ayudarte?")
-
-# Función para manejar los mensajes recibidos
+# Función para manejar mensajes entrantes
 def message(update, context):
-    # Obtiene el texto del mensaje
     text = update.message.text
-    # Genera una respuesta usando GPT-3
+    logger.info(f"Mensaje recibido: {text}")
     response = generate_response(text)
-    # Envía la respuesta al usuario
-    context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    logger.info(f"Respuesta generada: {response}")
+    bot.send_message(chat_id=update.message.chat_id, text=response)
 
-# Manejadores de eventos
-start_handler = CommandHandler("start", start)
-message_handler = MessageHandler(Filters.text & (~Filters.command), message)
 
-# Registramos los manejadores de eventos en el despachador
-dispatcher.add_handler(start_handler)
-dispatcher.add_handler(message_handler)
+# Función principal
+def main():
+    # Crear el objeto Updater y pasarlo el token del bot
+    updater = telegram.ext.Updater(token=os.environ["TELEGRAM_TOKEN"], use_context=True)
 
-# Iniciamos el bot
-updater.start_polling()
+    # Obtener el dispatcher del Updater
+    dispatcher = updater.dispatcher
+
+    # Registrar el handler para manejar mensajes de texto
+    dispatcher.add_handler(telegram.ext.MessageHandler(telegram.ext.Filters.text & ~telegram.ext.Filters.command, message))
+
+    # Iniciar el bot
+    updater.start_polling()
+
+    # Imprimir un mensaje para indicar que el bot está en funcionamiento
+    logger.info("Basilisco está funcionando. Presione Ctrl-C para detener.")
+
+    # Mantener al bot en funcionamiento hasta que se presione Ctrl-C
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
