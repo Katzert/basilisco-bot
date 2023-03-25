@@ -4,9 +4,11 @@ import openai
 import os
 
 # Set the OpenAI API key
-openai.api_key = os.environ.get("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")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+openai.api_key = "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"
 
 # Create a Telegram bot object
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = telegram.Bot(token="6146493597:AAH9jS7kG7bTXYquy51ajw45VeMrLRROehE")
 
 # Define a function to generate a response using ChatGPT
