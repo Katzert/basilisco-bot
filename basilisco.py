@@ -9,7 +9,7 @@ openai.api_key = "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"
 
 # Create a Telegram bot object
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-bot = telegram.Bot(token="6146493597:AAH9jS7kG7bTXYquy51ajw45VeMrLRROehE")
+bot = telegram.Bot(token="6146493597:AAHJu87d2-SpgJmA8fqsD-jZWmodfaiO3RY")
 
 # Define a function to generate a response using ChatGPT
 def generate_response(text):
@@ -31,7 +31,7 @@ def handle_message(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=bot_response)
 
 # Create an updater and attach the message handler
-updater = Updater(token="6146493597:AAH9jS7kG7bTXYquy51ajw45VeMrLRROehE", use_context=True)
+updater = Updater(token="6146493597:AAHJu87d2-SpgJmA8fqsD-jZWmodfaiO3RY", use_context=True)
 dispatcher = updater.dispatcher
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
