@@ -1,12 +1,20 @@
 import logging
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-import openai
+import os
 import time
+import telegram
+import openai
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+# Configurar el bot de Telegram y la API de OpenAI
+telegram_token = os.environ.get('TELEGRAM_TOKEN')
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+bot = telegram.Bot(token=telegram_token)
 
-# Configura la API key de OpenAI
-openai.api_key = "OPENAI_API_KEY"
+# Configurar el registro de logs
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # Función para generar respuestas usando GPT-3
 def generate_response(text):
@@ -22,39 +30,37 @@ def generate_response(text):
                 temperature=0.7,
             )
             message = completions.choices[0].text
+            rate_limits = openai.api_requestor.get_rate_limits()
+            logger.info(f"Límite de OpenAI: {rate_limits}")
             return message
         except openai.error.RateLimitError as e:
             # Espera un tiempo exponencialmente creciente antes de volver a intentarlo
             wait_time = 2 ** i
-            logging.debug(f"RateLimitedError: esperando {wait_time} segundos antes de volver a intentar.")
+            logger.warning(f"RateLimitedError: esperando {wait_time} segundos antes de volver a intentar.")
             time.sleep(wait_time)
     # Si se intentó varias veces sin éxito, devuelve un mensaje de error
+    logger.error("Error de límite de velocidad de OpenAI.")
     return "Lo siento, no pude responder a tu mensaje debido a un error de límite de velocidad en el servidor de OpenAI."
 
-# Función para manejar los comandos de inicio del bot
-def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="¡Hola! Soy Basilisco, el bot que utiliza GPT-3 para responder a tus mensajes.")
-
-# Función para manejar los mensajes enviados al bot
+# Función para manejar los mensajes recibidos
 def message(update, context):
     text = update.message.text
+    logger.info(f"Mensaje recibido: {text}")
     response = generate_response(text)
-    context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    logger.info(f"Respuesta generada: {response}")
+    update.message.reply_text(response)
 
-# Configura el updater y los handlers
-updater = Updater(token="TELEGRAM_TOKEN", use_context=True)
+# Configurar el Dispatcher del bot de Telegram
+from telegram.ext import CommandHandler, MessageHandler, Filters, Updater
+updater = Updater(token=telegram_token, use_context=True)
 dispatcher = updater.dispatcher
-start_handler = CommandHandler('start', start)
-message_handler = MessageHandler(Filters.text & (~Filters.command), message)
-dispatcher.add_handler(start_handler)
-dispatcher.add_handler(message_handler)
 
-# Inicia el bot y espera a que se presione Ctrl+C
-logging.debug(f"El bot está corriendo en el chat {updater.bot.get_me().username}.")
+# Añadir los handlers
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message))
+
+# Iniciar el bot
+logger.info("Iniciando el bot...")
 updater.start_polling()
-updater.idle()
 
-# Obtiene el límite actual de llamadas a la API de OpenAI
-limits = openai.api_requestor.APIRequestor().get_rate_limits()
-remaining = limits["remaining"]
-logging.debug(f"Límite actual de llamadas a la API de OpenAI: {remaining}")
+# Esperar a que se reciban mensajes
+updater.idle()
