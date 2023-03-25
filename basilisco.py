@@ -16,6 +16,10 @@ def generate_response(text):
     prompt = f"{text}\nBasilisco:"
     for i in range(5): # Intenta 5 veces antes de dar un error
         try:
+            # Imprime el límite de velocidad actual
+            rate_limit = openai.api_requestor.rate_limit_remaining
+            print(f"Rate limit remaining: {rate_limit}")
+            
             completions = openai.Completion.create(
                 engine="davinci",
                 prompt=prompt,
