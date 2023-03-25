@@ -1,49 +1,49 @@
-import telegram
-from telegram.ext import Updater, MessageHandler, Filters
-import openai
 import os
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import openai
+import random
 
-# Set the OpenAI API key
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai.api_key = "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"
+# Configure las credenciales de OpenAI a través de variables de entorno
+openai.api_key = os.environ.get("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")
 
-# Create a Telegram bot object
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-bot = telegram.Bot(token="6146493597:AAHnZAfCSrrY2Mm-8SIBLxu-61MRxH7RDV0")
-
-# Define a function to generate a response using ChatGPT
-def generate_response(text):
-    prompt = f"Me: {text}\nBasilisco:"
-    response = openai.Completion.create(
-        engine="davinci", prompt=prompt, max_tokens=50, n=1, stop=None, temperature=0.7
-    ).choices[0].text
-    return response.strip()
-
-# Define a function to handle incoming messages
-def handle_message(update, context):
-    # Get the user's message
-    user_message = update.message.text
-
-    # Generate a response using ChatGPT
-    bot_response = generate_response(user_message)
-
-    # Send the response back to the user
-    context.bot.send_message(chat_id=update.effective_chat.id, text=bot_response)
-
-# Create an updater and attach the message handler
-updater = Updater(token="6146493597:AAHnZAfCSrrY2Mm-8SIBLxu-61MRxH7RDV0", use_context=True)
+# Configuración del bot de Telegram
+updater = Updater(token=os.environ.get("6146493597:AAH9jS7kG7bTXYquy51ajw45VeMrLRROehE"), use_context=True)
 dispatcher = updater.dispatcher
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-# Start the bot
+# Función para generar respuestas usando GPT-3
+def generate_response(text):
+    prompt = f"{text}\nBasilisco:"
+    completions = openai.Completion.create(
+        engine="davinci",
+        prompt=prompt,
+        max_tokens=2048,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    message = completions.choices[0].text
+    return message
+
+# Función para manejar el comando /start
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="¡Hola! Soy Basilisco, tu asistente personal de chat. ¿En qué puedo ayudarte?")
+
+# Función para manejar los mensajes recibidos
+def message(update, context):
+    # Obtiene el texto del mensaje
+    text = update.message.text
+    # Genera una respuesta usando GPT-3
+    response = generate_response(text)
+    # Envía la respuesta al usuario
+    context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+# Manejadores de eventos
+start_handler = CommandHandler("start", start)
+message_handler = MessageHandler(Filters.text & (~Filters.command), message)
+
+# Registramos los manejadores de eventos en el despachador
+dispatcher.add_handler(start_handler)
+dispatcher.add_handler(message_handler)
+
+# Iniciamos el bot
 updater.start_polling()
-
-# Inform the user that the bot is running
-print("Basilisco está corriendo...")
-
-# Limitaciones de OpenAI
-print("Tenga en cuenta que Basilisco tiene un límite de solicitudes por mes con OpenAI.")
-
-# Run the bot until the user presses Ctrl-C or the process receives SIGINT, SIGTERM or SIGABRT
-updater.idle()
-
