@@ -4,10 +4,10 @@ import openai
 import random
 
 # Configure las credenciales de OpenAI a través de variables de entorno
-openai.api_key = os.environ.get("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")
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Configuración del bot de Telegram
-updater = Updater(token=os.environ.get("6146493597:AAH9jS7kG7bTXYquy51ajw45VeMrLRROehE"), use_context=True)
+updater = Updater(token=os.environ.get("TELEGRAM_TOKEN"), use_context=True)
 dispatcher = updater.dispatcher
 
 # Función para generar respuestas usando GPT-3
@@ -16,7 +16,7 @@ def generate_response(text):
     completions = openai.Completion.create(
         engine="davinci",
         prompt=prompt,
-        max_tokens=2048,
+        max_tokens=1024,
         n=1,
         stop=None,
         temperature=0.7,
