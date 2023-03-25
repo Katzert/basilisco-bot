@@ -1,4 +1,5 @@
 import os
+import time
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import openai
 import random
@@ -13,16 +14,25 @@ dispatcher = updater.dispatcher
 # Función para generar respuestas usando GPT-3
 def generate_response(text):
     prompt = f"{text}\nBasilisco:"
-    completions = openai.Completion.create(
-        engine="davinci",
-        prompt=prompt,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7,
-    )
-    message = completions.choices[0].text
-    return message
+    for i in range(5): # Intenta 5 veces antes de dar un error
+        try:
+            completions = openai.Completion.create(
+                engine="davinci",
+                prompt=prompt,
+                max_tokens=1024,
+                n=1,
+                stop=None,
+                temperature=0.7,
+            )
+            message = completions.choices[0].text
+            return message
+        except openai.error.RateLimitedError as e:
+            # Espera un tiempo exponencialmente creciente antes de volver a intentarlo
+            wait_time = 2 ** i
+            print(f"RateLimitedError: esperando {wait_time} segundos antes de volver a intentar.")
+            time.sleep(wait_time)
+    # Si se intentó varias veces sin éxito, devuelve un mensaje de error
+    return "Lo siento, no pude responder a tu mensaje debido a un error de límite de velocidad en el servidor de OpenAI."
 
 # Función para manejar el comando /start
 def start(update, context):
