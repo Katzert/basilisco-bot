@@ -26,7 +26,7 @@ def generate_response(text):
             )
             message = completions.choices[0].text
             return message
-        except openai.error.RateLimitedError as e:
+        except openai.error.RateLimitError as e:
             # Espera un tiempo exponencialmente creciente antes de volver a intentarlo
             wait_time = 2 ** i
             print(f"RateLimitedError: esperando {wait_time} segundos antes de volver a intentar.")
