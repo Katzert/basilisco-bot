@@ -16,10 +16,7 @@ def generate_response(text):
     prompt = f"{text}\nBasilisco:"
     for i in range(5): # Intenta 5 veces antes de dar un error
         try:
-            # Imprime el límite de velocidad actual
-            rate_limit = openai.api_requestor.rate_limit_remaining
-            print(f"Rate limit remaining: {rate_limit}")
-            
+            rate_limits = openai.api_requestor.get_rate_limits()
             completions = openai.Completion.create(
                 engine="davinci",
                 prompt=prompt,
@@ -33,10 +30,11 @@ def generate_response(text):
         except openai.error.RateLimitError as e:
             # Espera un tiempo exponencialmente creciente antes de volver a intentarlo
             wait_time = 2 ** i
-            print(f"RateLimitedError: esperando {wait_time} segundos antes de volver a intentar.")
+            print(f"RateLimitError: {e}. Esperando {wait_time} segundos antes de volver a intentar.")
             time.sleep(wait_time)
     # Si se intentó varias veces sin éxito, devuelve un mensaje de error
     return "Lo siento, no pude responder a tu mensaje debido a un error de límite de velocidad en el servidor de OpenAI."
+
 
 # Función para manejar el comando /start
 def start(update, context):
