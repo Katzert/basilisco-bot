@@ -6,7 +6,7 @@ import time
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 # Configura la API key de OpenAI
-openai.api_key = "YOUR_API_KEY"
+openai.api_key = "OPENAI_API_KEY"
 
 # Función para generar respuestas usando GPT-3
 def generate_response(text):
@@ -42,7 +42,7 @@ def message(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 # Configura el updater y los handlers
-updater = Updater(token="YOUR_BOT_TOKEN", use_context=True)
+updater = Updater(token="TELEGRAM_TOKEN", use_context=True)
 dispatcher = updater.dispatcher
 start_handler = CommandHandler('start', start)
 message_handler = MessageHandler(Filters.text & (~Filters.command), message)
